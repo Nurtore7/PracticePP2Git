@@ -7,16 +7,3 @@ class Person:
 #Use the Person class to create an object, and then execute the printname method:
 x = Person("John", "Doe")
 x.printname()
-
-
-class Student(Person):
-  pass
-
-
-x = Student("Mike", "Olsen")
-x.printname()
-
-
-class Student(Person):
-  def __init__(self, fname, lname):
-    Person.__init__(self, fname, lname)
