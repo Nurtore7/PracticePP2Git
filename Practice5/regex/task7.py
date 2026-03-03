@@ -1,10 +1,3 @@
-s = input()
-
-parts = s.split("_")
-
-camel = parts[0]
-
-for word in parts[1:]:
-    camel += word.capitalize()
-
-print(camel)
+import re
+s=input()
+print(re.sub(r'_([a-z])', lambda m:m.group(1).upper(), s))
