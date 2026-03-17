@@ -12,18 +12,6 @@ for name, age in zip(names, ages):
 numbers = [5, 2, 8, 1]
 print("\nSorted numbers:", sorted(numbers))
 
-x = "123"
-y = "3.14"
-z = 500
-
-print("\nType conversions:")
-print(int(x))
-print(float(y))
-print(str(z))
-print(list("Python"))
-
-print("\nType checking:")
-print(type(x))
-print(type(int(x)))
-print(type(float(y)))
-print(type(str(z)))
+x="10"
+b=int(x)
+print(type(b), b)
