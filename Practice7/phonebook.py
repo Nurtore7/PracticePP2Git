@@ -1,15 +1,13 @@
-from connect import get_connection
+from connect import connect
+
 import csv
 
-def add_contact():
-    conn = get_connection()
-    if conn is None:
-        return
-
+def insert_console():
+    conn = connect()
     cur = conn.cursor()
 
-    name = input("Enter name: ")
-    phone = input("Enter phone: ")
+    name = input("Name: ")
+    phone = input("Phone: ")
 
     cur.execute(
         "INSERT INTO phonebook (name, phone) VALUES (%s, %s)",
@@ -20,14 +18,8 @@ def add_contact():
     cur.close()
     conn.close()
 
-    print("Contact added")
-
-
-def show_contacts():
-    conn = get_connection()
-    if conn is None:
-        return
-
+def show_all():
+    conn = connect()
     cur = conn.cursor()
 
     cur.execute("SELECT * FROM phonebook")
@@ -39,82 +31,13 @@ def show_contacts():
     cur.close()
     conn.close()
 
-
-def update_contact():
-    conn = get_connection()
-    if conn is None:
-        return
-
+def insert_csv():
+    conn = connect()
     cur = conn.cursor()
 
-    name = input("Enter name to update: ")
-    new_phone = input("Enter new phone: ")
+    with open("contacts.csv", "r") as f:
+        reader = csv.reader(f)
 
-    cur.execute(
-        "UPDATE phonebook SET phone = %s WHERE name = %s",
-        (new_phone, name)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    print("Updated successfully")
-
-
-def delete_contact():
-    conn = get_connection()
-    if conn is None:
-        return
-
-    cur = conn.cursor()
-
-    name = input("Enter name to delete: ")
-
-    cur.execute(
-        "DELETE FROM phonebook WHERE name = %s",
-        (name,)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    print("Deleted successfully")
-
-
-def search_contact():
-    conn = get_connection()
-    if conn is None:
-        return
-
-    cur = conn.cursor()
-
-    word = input("Search: ")
-
-    cur.execute(
-        "SELECT * FROM phonebook WHERE name ILIKE %s",
-        ("%" + word + "%",)
-    )
-
-    rows = cur.fetchall()
-
-    for row in rows:
-        print(row)
-
-    cur.close()
-    conn.close()
-
-
-def import_csv():
-    conn = get_connection()
-    if conn is None:
-        return
-
-    cur = conn.cursor()
-
-    with open("contacts.csv", "r", encoding="utf-8") as file:
-        reader = csv.reader(file)
         for row in reader:
             cur.execute(
                 "INSERT INTO phonebook (name, phone) VALUES (%s, %s)",
@@ -125,32 +48,57 @@ def import_csv():
     cur.close()
     conn.close()
 
-    print("CSV imported")
+def search():
+    conn = connect()
+    cur = conn.cursor()
 
+    word = input("Search: ")
 
-# МЕНЮ
+    cur.execute(
+        "SELECT * FROM phonebook WHERE name ILIKE %s OR phone ILIKE %s",
+        (f"%{word}%", f"%{word}%")
+    )
+
+    rows = cur.fetchall()
+
+    for row in rows:
+        print(row)
+
+    cur.close()
+    conn.close()
+
+def delete():
+    conn = connect()
+    cur = conn.cursor()
+
+    name = input("Name to delete: ")
+
+    cur.execute("DELETE FROM phonebook WHERE name=%s", (name,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
 while True:
-    print("\n1 - Add contact")
-    print("2 - Show contacts")
-    print("3 - Update contact")
-    print("4 - Delete contact")
-    print("5 - Search")
-    print("6 - Import CSV")
-    print("0 - Exit")
+    print("\n--- PHONEBOOK MENU ---")
+    print("1. Insert from CSV")
+    print("2. Insert from console")
+    print("3. Show all")
+    print("4. Search")
+    print("5. Delete")
+    print("0. Exit")
 
     choice = input("Choose: ")
 
     if choice == "1":
-        add_contact()
+        insert_csv()
     elif choice == "2":
-        show_contacts()
+        insert_console()
     elif choice == "3":
-        update_contact()
+        show_all()
     elif choice == "4":
-        delete_contact()
+        search()
     elif choice == "5":
-        search_contact()
-    elif choice == "6":
-        import_csv()
+        delete()
     elif choice == "0":
         break
