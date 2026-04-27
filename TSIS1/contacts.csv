@@ -1,4 +1,5 @@
-name,email,birthday,group,phones
-Иван Петров,ivan@mail.ru,1990-05-15,Work,+7-123-456-7890:mobile
-Мария Сидорова,maria@gmail.com,1985-08-22,Family,+7-123-456-7891:home
-Алексей Иванов,alex@yandex.ru,1995-03-10,Friend,+7-123-456-7892:mobile;+7-123-456-7893:work
+name,email,birthday,group,phone,phone_type
+Ivan Petrov,ivan@mail.com,1990-05-15,Work,+7-123-456-7890,mobile
+Maria Sidorova,maria@gmail.com,1985-08-20,Family,+7-098-765-4321,home
+Alexey Ivanov,alex@company.com,1992-03-10,Work,+7-555-123-4567,mobile
+Elena Smirnova,elena@mail.com,1988-11-25,Friend,+7-777-888-9999,work

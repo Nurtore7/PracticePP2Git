@@ -1,4 +1,7 @@
--- Процедура добавления телефона существующему контакту
+-- procedures.sql
+-- Хранимые процедуры и функции
+
+-- Процедура add_phone: добавляет телефон существующему контакту
 CREATE OR REPLACE PROCEDURE add_phone(
     p_contact_name VARCHAR,
     p_phone VARCHAR,
@@ -9,20 +12,24 @@ AS $$
 DECLARE
     v_contact_id INTEGER;
 BEGIN
-    -- Получаем ID контакта
-    SELECT id INTO v_contact_id FROM contacts WHERE name = p_contact_name;
+    -- Поиск контакта по имени
+    SELECT id INTO v_contact_id 
+    FROM contacts 
+    WHERE name = p_contact_name;
     
     IF v_contact_id IS NULL THEN
-        RAISE EXCEPTION 'Contact "%" not found', p_contact_name;
+        RAISE EXCEPTION 'Contact with name "%" not found', p_contact_name;
     END IF;
     
-    -- Добавляем телефон
-    INSERT INTO phones (contact_id, phone, type) 
+    -- Добавление телефона
+    INSERT INTO phones (contact_id, phone, type)
     VALUES (v_contact_id, p_phone, p_type);
+    
+    RAISE NOTICE 'Phone % added for contact %', p_phone, p_contact_name;
 END;
 $$;
 
--- Процедура перемещения контакта в группу
+-- Процедура move_to_group: перемещает контакт в другую группу
 CREATE OR REPLACE PROCEDURE move_to_group(
     p_contact_name VARCHAR,
     p_group_name VARCHAR
@@ -30,40 +37,49 @@ CREATE OR REPLACE PROCEDURE move_to_group(
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_group_id INTEGER;
     v_contact_id INTEGER;
+    v_group_id INTEGER;
 BEGIN
-    -- Получаем ID контакта
-    SELECT id INTO v_contact_id FROM contacts WHERE name = p_contact_name;
+    -- Поиск контакта
+    SELECT id INTO v_contact_id 
+    FROM contacts 
+    WHERE name = p_contact_name;
     
     IF v_contact_id IS NULL THEN
-        RAISE EXCEPTION 'Contact "%" not found', p_contact_name;
+        RAISE EXCEPTION 'Contact with name "%" not found', p_contact_name;
     END IF;
     
-    -- Проверяем существование группы, если нет - создаем
-    SELECT id INTO v_group_id FROM groups WHERE name = p_group_name;
+    -- Поиск или создание группы
+    SELECT id INTO v_group_id 
+    FROM groups 
+    WHERE name = p_group_name;
     
     IF v_group_id IS NULL THEN
-        INSERT INTO groups (name) VALUES (p_group_name) RETURNING id INTO v_group_id;
+        INSERT INTO groups (name) VALUES (p_group_name)
+        RETURNING id INTO v_group_id;
+        RAISE NOTICE 'Created new group: %', p_group_name;
     END IF;
     
-    -- Обновляем группу контакта
-    UPDATE contacts SET group_id = v_group_id WHERE id = v_contact_id;
+    -- Перемещение контакта
+    UPDATE contacts 
+    SET group_id = v_group_id 
+    WHERE id = v_contact_id;
+    
+    RAISE NOTICE 'Contact % moved to group %', p_contact_name, p_group_name;
 END;
 $$;
 
--- Функция расширенного поиска
+-- Функция search_contacts: расширенный поиск по всем полям
 CREATE OR REPLACE FUNCTION search_contacts(p_query TEXT)
 RETURNS TABLE(
-    id INTEGER,
-    name VARCHAR,
+    contact_id INTEGER,
+    contact_name VARCHAR,
     email VARCHAR,
     birthday DATE,
     group_name VARCHAR,
-    phones TEXT
-)
-LANGUAGE plpgsql
-AS $$
+    phones TEXT,
+    relevance INTEGER
+) AS $$
 BEGIN
     RETURN QUERY
     SELECT DISTINCT
@@ -71,53 +87,21 @@ BEGIN
         c.name,
         c.email,
         c.birthday,
-        g.name AS group_name,
-        STRING_AGG(DISTINCT p.phone || ' (' || p.type || ')', ', ') AS phones
+        g.name as group_name,
+        STRING_AGG(DISTINCT p.phone || ' (' || p.type || ')', ', ') as phones,
+        (
+            (CASE WHEN c.name ILIKE '%' || p_query || '%' THEN 3 ELSE 0 END) +
+            (CASE WHEN c.email ILIKE '%' || p_query || '%' THEN 2 ELSE 0 END) +
+            (CASE WHEN p.phone ILIKE '%' || p_query || '%' THEN 2 ELSE 0 END)
+        ) as relevance
     FROM contacts c
     LEFT JOIN groups g ON c.group_id = g.id
     LEFT JOIN phones p ON c.id = p.contact_id
     WHERE 
-        c.name ILIKE '%' || p_query || '%'
-        OR c.email ILIKE '%' || p_query || '%'
-        OR p.phone ILIKE '%' || p_query || '%'
-    GROUP BY c.id, c.name, c.email, c.birthday, g.name
-    ORDER BY c.name;
+        c.name ILIKE '%' || p_query || '%' OR
+        c.email ILIKE '%' || p_query || '%' OR
+        p.phone ILIKE '%' || p_query || '%'
+    GROUP BY c.id, g.name, c.name, c.email, c.birthday
+    ORDER BY relevance DESC, c.name;
 END;
-$$;
-
--- Функция пагинации (из Practice 8, но обновленная)
-CREATE OR REPLACE FUNCTION get_paginated_contacts(
-    p_limit INTEGER,
-    p_offset INTEGER,
-    p_sort_by VARCHAR DEFAULT 'name'
-)
-RETURNS TABLE(
-    id INTEGER,
-    name VARCHAR,
-    email VARCHAR,
-    birthday DATE,
-    group_name VARCHAR,
-    phones TEXT
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        c.id,
-        c.name,
-        c.email,
-        c.birthday,
-        g.name AS group_name,
-        STRING_AGG(p.phone || ' (' || p.type || ')', ', ') AS phones
-    FROM contacts c
-    LEFT JOIN groups g ON c.group_id = g.id
-    LEFT JOIN phones p ON c.id = p.contact_id
-    GROUP BY c.id, c.name, c.email, c.birthday, g.name
-    ORDER BY 
-        CASE WHEN p_sort_by = 'name' THEN c.name END,
-        CASE WHEN p_sort_by = 'birthday' THEN c.birthday END,
-        CASE WHEN p_sort_by = 'id' THEN c.id END
-    LIMIT p_limit OFFSET p_offset;
-END;
-$$;
+$$ LANGUAGE plpgsql;

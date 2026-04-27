@@ -1,0 +1,18 @@
+[
+  {
+    "id": 2,
+    "name": "Nurtore",
+    "email": "n@gmail.com",
+    "birthday": "1222-10-11",
+    "group": "Work",
+    "phones": "+77777777777 (mobile)"
+  },
+  {
+    "id": 1,
+    "name": "Test Contact",
+    "email": "test@example.com",
+    "birthday": "1990-01-01",
+    "group": "Family",
+    "phones": "No phones"
+  }
+]
