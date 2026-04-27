@@ -171,40 +171,13 @@ while running:
             border_radius=5
         )
 
-    # Draw food with visual timer indicator
-    # Calculate how much time is left (0 to 1, where 1 is full time)
-    time_left_ratio = max(0, 1 - (food_timer / FOOD_TIME_LIMIT))
-    
-    # Food color changes from green to red as timer runs out
-    food_red = 255
-    food_green = int(255 * time_left_ratio)
-    food_blue = 0
-    
+    # Draw food - RED color, no timer indicator
     pygame.draw.rect(
         screen,
-        (food_red, food_green, food_blue),
+        (255, 0, 0),  # Solid red color
         (food[0], food[1], CELL, CELL),
         border_radius=5
     )
-    
-    # Draw timer circle around food (shows remaining time)
-    if food_timer > 0:
-        # Draw a progress circle around the food
-        center_x = food[0] + CELL // 2
-        center_y = food[1] + CELL // 2
-        radius = CELL // 2 + 2
-        
-        # Draw background circle (grey)
-        pygame.draw.circle(screen, (80, 80, 80), (center_x, center_y), radius, 2)
-        
-        # Draw progress arc
-        angle = 360 * (1 - food_timer / FOOD_TIME_LIMIT)
-        # Simple indicator: just draw a small arc or fill
-        # For simplicity, we'll just draw a small indicator circle
-        indicator_radius = 3
-        indicator_x = center_x + int(radius * 0.7 * (food_timer / FOOD_TIME_LIMIT))
-        indicator_y = center_y - int(radius * 0.7)
-        pygame.draw.circle(screen, (255, 255, 255), (indicator_x, indicator_y), indicator_radius)
 
     # Create score text
     score_text = font.render(f"Score: {score}", True, (255, 255, 255))

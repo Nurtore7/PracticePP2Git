@@ -36,12 +36,10 @@ mode = "draw"
 # Checks if mouse button is pressed
 drawing = False
 
-
 start_pos = None
 
 # Main loop variable
 running = True
-
 
 while running:
 
@@ -72,33 +70,24 @@ while running:
             if event.key == pygame.K_d:
                 mode = "draw"
 
-            
             if event.key == pygame.K_e:
                 mode = "eraser"
 
-           
-
-            
             if event.key == pygame.K_c:
                 mode = "circle"
 
-            
             if event.key == pygame.K_r:
                 mode = "rect"
 
-           
             if event.key == pygame.K_s:
                 mode = "square"
 
-            
             if event.key == pygame.K_t:
                 mode = "right_triangle"
 
-            
             if event.key == pygame.K_q:
                 mode = "equilateral_triangle"
 
-            
             if event.key == pygame.K_h:
                 mode = "rhombus"
 
@@ -106,11 +95,6 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             drawing = True
             start_pos = event.pos
-
-            # If fill mode is selected, fill clicked area immediately
-            if mode == "fill":
-                flood_fill(screen, event.pos, color)
-                drawing = False
 
         # Mouse button released
         if event.type == pygame.MOUSEBUTTONUP:
@@ -161,7 +145,6 @@ while running:
 
             # Draw right triangle
             if mode == "right_triangle":
-                #
                 points = [
                     (x1, y1),
                     (x1, y2),
@@ -175,10 +158,8 @@ while running:
                 # Side length
                 side = abs(x2 - x1)
 
-               
                 triangle_height = int(side * math.sqrt(3) / 2)
 
-                
                 if y2 > y1:
                     points = [
                         (x1, y1 + triangle_height),
@@ -214,15 +195,12 @@ while running:
         # Mouse movement
         if event.type == pygame.MOUSEMOTION:
 
-            
             if drawing and mode == "draw":
                 pygame.draw.circle(screen, color, event.pos, radius)
 
-            
             if drawing and mode == "eraser":
                 pygame.draw.circle(screen, WHITE, event.pos, radius + 10)
 
-    
     pygame.display.flip()
 
     clock.tick(60)
