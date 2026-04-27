@@ -48,15 +48,15 @@
         "coins": 10
     },
     {
+        "name": "n",
+        "score": 3807,
+        "distance": 2987,
+        "coins": 82
+    },
+    {
         "name": "k",
         "score": 2988,
         "distance": 2948,
         "coins": 4
-    },
-    {
-        "name": "a",
-        "score": 2874,
-        "distance": 2824,
-        "coins": 5
     }
 ]

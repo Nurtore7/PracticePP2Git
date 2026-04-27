@@ -46,12 +46,12 @@ font = pygame.font.SysFont("Verdana", 60)
 font_small = pygame.font.SysFont("Verdana", 18)
 
 # Load images
-background = pygame.image.load("Practice10/images/AnimatedStreet.png")
-player_img = pygame.image.load("Practice10/images/Player.png")
-enemy_img = pygame.image.load("Practice10/images/Enemy.png")
+background = pygame.image.load("Practice10/racer/AnimatedStreet.png")
+player_img = pygame.image.load("Practice10/racer/Player.png")
+enemy_img = pygame.image.load("Practice10/racer/Enemy.png")
 
 
-crash_sound = pygame.mixer.Sound("Practice10/images/crash.wav")
+crash_sound = pygame.mixer.Sound("Practice10/racer/crash.wav")
 
 # Game Over text
 game_over_text = font.render("Game Over", True, BLACK)

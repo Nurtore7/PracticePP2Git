@@ -10,23 +10,23 @@ WIDTH, HEIGHT = 600, 600
 # Size of one cell in the grid
 CELL = 20
 
-
+# Create game window
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Snake Practice 11")
+pygame.display.set_caption("Snake Pro")
 
 # Clock controls the game speed
 clock = pygame.time.Clock()
 
-
+# Font for score and level text
 font = pygame.font.SysFont("Verdana", 20)
 
-
+# Snake starts with one block
 snake = [(100, 100)]
 
-
+# Initial movement direction: right
 dx, dy = CELL, 0
 
-
+# Initial score
 score = 0
 
 # Initial level
@@ -35,23 +35,18 @@ level = 1
 # Initial snake speed
 speed = 10
 
-# Every 4 score points, level increases
-POINTS_FOR_NEXT_LEVEL = 4
+# Every 4 food items, level increases
+FOOD_FOR_NEXT_LEVEL = 4
 
-# Food disappears after 5 seconds
-FOOD_LIFETIME = 5000
+# Time limit for food (in seconds)
+FOOD_TIME_LIMIT = 8
 
-# Current food weight
-food_weight = 1
-
-# Time when food appeared
-food_spawn_time = pygame.time.get_ticks()
+# Timer for food
+food_timer = 0
 
 
 # Function to generate food in a random place
 def generate_food():
-    global food_weight, food_spawn_time
-
     while True:
         # Generate random x and y position according to the grid
         x = random.randrange(0, WIDTH, CELL)
@@ -59,28 +54,7 @@ def generate_food():
 
         # Food must not appear inside the snake
         if (x, y) not in snake:
-
-            # Randomly choose food weight
-            food_weight = random.choice([1, 2, 3])
-
-            # Remember the time when food appeared
-            food_spawn_time = pygame.time.get_ticks()
-
             return (x, y)
-
-
-# Function to choose food color by weight
-def get_food_color(weight):
-    # Weight 1 food gives 1 point
-    if weight == 1:
-        return (255, 0, 0)       # red
-
-    # Weight 2 food gives 2 points
-    if weight == 2:
-        return (255, 255, 0)     # yellow
-
-    # Weight 3 food gives 3 points
-    return (0, 150, 255)         # blue
 
 
 # Generate the first food
@@ -89,8 +63,17 @@ food = generate_food()
 # Main game variable
 running = True
 
+# Timer for food (in seconds)
+food_timer = 0
+
 # Main game loop
 while running:
+
+    # Get delta time (time passed since last frame)
+    dt = clock.tick(speed) / 1000.0  # Convert milliseconds to seconds
+    
+    # Update food timer
+    food_timer += dt
 
     # Check all events
     for event in pygame.event.get():
@@ -118,13 +101,6 @@ while running:
             if event.key == pygame.K_RIGHT and dx == 0:
                 dx, dy = CELL, 0
 
-    # Current time in milliseconds
-    current_time = pygame.time.get_ticks()
-
-    # Check if food lifetime is over
-    if current_time - food_spawn_time > FOOD_LIFETIME:
-        food = generate_food()
-
     # Get current snake head
     head = snake[0]
 
@@ -134,36 +110,42 @@ while running:
     # Check wall collision
     if new_head[0] < 0 or new_head[0] >= WIDTH or new_head[1] < 0 or new_head[1] >= HEIGHT:
         running = False
-        continue
 
     # Check collision with itself
     if new_head in snake:
         running = False
-        continue
 
     # Add new head to the beginning of the snake
     snake.insert(0, new_head)
 
     # Check if snake eats food
     if new_head == food:
-
-        # Increase score by food weight
-        score += food_weight
+        # Reset food timer
+        food_timer = 0
+        
+        # Increase score
+        score += 1
 
         # Generate new food
         food = generate_food()
 
-        # Increase level depending on score
-        new_level = score // POINTS_FOR_NEXT_LEVEL + 1
+        # If score is divisible by 4, increase level
+        if score % FOOD_FOR_NEXT_LEVEL == 0:
+            level += 1
 
-        # If level changed, increase speed
-        if new_level > level:
-            level = new_level
+            # Increase speed when level increases
             speed += 2
 
     else:
         # If snake did not eat food, remove the tail
         snake.pop()
+    
+    # Check if food timer exceeded the limit
+    if food_timer >= FOOD_TIME_LIMIT:
+        # Move food to new location
+        food = generate_food()
+        # Reset timer
+        food_timer = 0
 
     # Fill background
     screen.fill((30, 30, 30))
@@ -180,63 +162,70 @@ while running:
     for i, segment in enumerate(snake):
         # Snake becomes a little darker from head to tail
         green_value = max(80, 255 - i * 5)
-        snake_color = (0, green_value, 0)
+        color = (0, green_value, 0)
 
         pygame.draw.rect(
             screen,
-            snake_color,
+            color,
             (segment[0], segment[1], CELL, CELL),
             border_radius=5
         )
 
-    # Draw food with color depending on weight
+    # Draw food with visual timer indicator
+    # Calculate how much time is left (0 to 1, where 1 is full time)
+    time_left_ratio = max(0, 1 - (food_timer / FOOD_TIME_LIMIT))
+    
+    # Food color changes from green to red as timer runs out
+    food_red = 255
+    food_green = int(255 * time_left_ratio)
+    food_blue = 0
+    
     pygame.draw.rect(
         screen,
-        get_food_color(food_weight),
+        (food_red, food_green, food_blue),
         (food[0], food[1], CELL, CELL),
         border_radius=5
     )
-
-    # Show food weight number on food
-    weight_text = font.render(str(food_weight), True, (255, 255, 255))
-    screen.blit(weight_text, (food[0] + 4, food[1] - 2))
-
-    # Calculate time left before food disappears
-    time_left = (FOOD_LIFETIME - (current_time - food_spawn_time)) // 1000 + 1
-
-    # If time becomes negative, show 0
-    if time_left < 0:
-        time_left = 0
+    
+    # Draw timer circle around food (shows remaining time)
+    if food_timer > 0:
+        # Draw a progress circle around the food
+        center_x = food[0] + CELL // 2
+        center_y = food[1] + CELL // 2
+        radius = CELL // 2 + 2
+        
+        # Draw background circle (grey)
+        pygame.draw.circle(screen, (80, 80, 80), (center_x, center_y), radius, 2)
+        
+        # Draw progress arc
+        angle = 360 * (1 - food_timer / FOOD_TIME_LIMIT)
+        # Simple indicator: just draw a small arc or fill
+        # For simplicity, we'll just draw a small indicator circle
+        indicator_radius = 3
+        indicator_x = center_x + int(radius * 0.7 * (food_timer / FOOD_TIME_LIMIT))
+        indicator_y = center_y - int(radius * 0.7)
+        pygame.draw.circle(screen, (255, 255, 255), (indicator_x, indicator_y), indicator_radius)
 
     # Create score text
-    score_text = font.render("Score: " + str(score), True, (255, 255, 255))
+    score_text = font.render(f"Score: {score}", True, (255, 255, 255))
 
     # Create level text
-    level_text = font.render("Level: " + str(level), True, (255, 255, 255))
-
-    # Create food weight text
-    food_text = font.render("Food weight: " + str(food_weight), True, (255, 255, 255))
-
+    level_text = font.render(f"Level: {level}", True, (255, 255, 255))
+    
     # Create timer text
-    timer_text = font.render("Time: " + str(time_left), True, (255, 255, 255))
+    timer_text = font.render(f"Food timer: {FOOD_TIME_LIMIT - int(food_timer)}s", True, (255, 255, 255))
 
     # Draw score on the screen
     screen.blit(score_text, (10, 10))
 
     # Draw level on the screen
     screen.blit(level_text, (10, 40))
-
-    # Draw food weight on the screen
-    screen.blit(food_text, (10, 70))
-
+    
     # Draw timer on the screen
-    screen.blit(timer_text, (10, 100))
+    screen.blit(timer_text, (10, 70))
 
     # Update display
     pygame.display.flip()
-
-    # Control game speed
-    clock.tick(speed)
 
 # Quit pygame
 pygame.quit()

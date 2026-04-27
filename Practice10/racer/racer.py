@@ -1,264 +1,223 @@
-import pygame, sys
-from pygame.locals import *
-import random, time
+import pygame
+import sys
+import random
 
 # Initialize pygame
 pygame.init()
 
 # FPS means how many frames per second the game will run
 FPS = 60
-FramePerSec = pygame.time.Clock()
+clock = pygame.time.Clock()
 
 # Colors in RGB format
-BLUE  = (0, 0, 255)
-RED   = (255, 0, 0)
-GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
+ORANGE = (255, 165, 0)
+GREEN = (0, 255, 0)
 
 # Screen size
 SCREEN_WIDTH = 400
 SCREEN_HEIGHT = 600
 
-# Initial speed of enemies and coins
-SPEED = 5
-
-# Score and collected coins
-SCORE = 0
-COINS = 0
-
-# Fonts for text
-font = pygame.font.SysFont("Verdana", 60)
-font_small = pygame.font.SysFont("Verdana", 20)
-
-# Load background image
-background = pygame.image.load("pp2/Practice10/images/AnimatedStreet.png")
-
 # Create game window
-DISPLAYSURF = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Game")
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Practice 10 Racer")
 
-# Create Game Over text
-game_over_text = font.render("Game Over", True, BLACK)
+# Initial enemy speed (never changes)
+enemy_speed = 5
 
+# Coin speed
+coin_speed = 5
 
-# Enemy class
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
-        # Call the parent Sprite constructor
-        super().__init__()
+score = 0
+coins = 0
 
-        # Load enemy image
-        self.image = pygame.image.load("pp2/Practice10/images/Enemy.png")
-
-        # Get rectangle of the image
-        # Rect is used for position, movement and collision
-        self.rect = self.image.get_rect()
-
-        # Place enemy at random X position at the top of the screen
-        self.rect.center = (random.randint(40, SCREEN_WIDTH - 40), 0)
-
-    def move(self):
-        # SCORE is global because we change it inside this method
-        global SCORE
-
-        # Move enemy down
-        self.rect.move_ip(0, SPEED)
-
-        # If enemy goes below the screen
-        if self.rect.bottom > SCREEN_HEIGHT:
-            # Add 1 point
-            SCORE += 1
-
-            # Move enemy back to the top
-            self.rect.top = 0
-
-            # Give enemy a new random X position
-            self.rect.center = (random.randint(40, SCREEN_WIDTH - 40), 0)
-
-
-# Coin class
-class Coin(pygame.sprite.Sprite):
-    def __init__(self):
-        # Call the parent Sprite constructor
-        super().__init__()
-
-        # Create a simple yellow coin surface with size 20x20
-        self.image = pygame.Surface((20, 20))
-        self.image.fill(YELLOW)
-
-        # Get rectangle of the coin
-        self.rect = self.image.get_rect()
-
-        # Place coin above the screen
-        self.rect.center = (random.randint(40, SCREEN_WIDTH - 40), -20)
-
-    def move(self):
-        # Move coin down
-        self.rect.move_ip(0, SPEED)
-
-        # If coin goes below the screen
-        if self.rect.top > SCREEN_HEIGHT:
-            # Move coin back above the screen
-            self.rect.top = -20
-
-            # Give coin a new random X position
-            self.rect.center = (random.randint(40, SCREEN_WIDTH - 40), -20)
-
-
-# Player class
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        # Call the parent Sprite constructor
-        super().__init__()
-
-        # Load player image
-        self.image = pygame.image.load("pp2/Practice10/images/Player.png")
-
-        # Get rectangle of the player image
-        self.rect = self.image.get_rect()
-
-        # Set player's start position
-        self.rect.center = (160, 520)
-
-    def move(self):
-        # Get all currently pressed keys
-        pressed_keys = pygame.key.get_pressed()
-
-        # Move left only if player is not outside the left border
-        if self.rect.left > 0:
-            if pressed_keys[K_LEFT]:
-                self.rect.move_ip(-5, 0)
-
-        # Move right only if player is not outside the right border
-        if self.rect.right < SCREEN_WIDTH:
-            if pressed_keys[K_RIGHT]:
-                self.rect.move_ip(5, 0)
-
-
-# Function to restart the game
-def reset_game():
-    # These variables are global because they are used in the main game loop
-    global SPEED, SCORE, COINS, P1, enemies, coins, all_sprites
-
-    # Reset values to the beginning
-    SPEED = 5
-    SCORE = 0
-    COINS = 0
-
-    # Create player
-    P1 = Player()
-
-    # Create two enemies
-    E1 = Enemy()
-    E2 = Enemy()
-
-    # Create one coin
-    C1 = Coin()
-
-    # Group for enemies
-    enemies = pygame.sprite.Group(E1, E2)
-
-    # Group for coins
-    coins = pygame.sprite.Group(C1)
-
-    # Group for all sprites
-    # It helps us move and draw all objects using one loop
-    all_sprites = pygame.sprite.Group(P1, E1, E2, C1)
-
-
-# Start the first game
-reset_game()
-
-# Create custom event for increasing speed
-INC_SPEED = pygame.USEREVENT + 1
-
-# This event will happen every 1000 milliseconds, so every 1 second
-pygame.time.set_timer(INC_SPEED, 1000)
-
-# This variable shows whether the game is over or not
+# Variable for showing whether game is over or not
 game_over = False
 
+font = pygame.font.SysFont("Verdana", 60)
+font_small = pygame.font.SysFont("Verdana", 18)
 
-# Main infinite game loop
+# Load images
+background = pygame.image.load("Practice10/racer/AnimatedStreet.png")
+player_img = pygame.image.load("Practice10/racer/Player.png")
+enemy_img = pygame.image.load("Practice10/racer/Enemy.png")
+
+# Load sound
+crash_sound = pygame.mixer.Sound("Practice10/racer/crash.wav")
+
+# Game Over text
+game_over_text = font.render("Game Over", True, BLACK)
+
+# Player position
+player_rect = player_img.get_rect()
+player_rect.center = (160, 520)
+
+# Enemy position
+enemy_rect = enemy_img.get_rect()
+enemy_rect.center = (random.randint(40, SCREEN_WIDTH - 40), 0)
+
+# Coin settings
+coin_size = 20
+coin_rect = pygame.Rect(0, 0, coin_size, coin_size)
+
+# Coin weight means how many points this coin gives
+coin_weight = 1
+
+# Function for choosing coin color by weight
+def get_coin_color(weight):
+    # Weight 1 coin is yellow
+    if weight == 1:
+        return YELLOW
+    # Weight 2 coin is orange
+    if weight == 2:
+        return ORANGE
+    # Weight 3 coin is green
+    return GREEN
+
+# Function for choosing coin size by weight
+def get_coin_size(weight):
+    # Bigger weight means bigger coin
+    if weight == 1:
+        return 18
+    if weight == 2:
+        return 24
+    return 30
+
+# Function for resetting enemy position
+def reset_enemy():
+    global enemy_rect
+    # Move enemy back to the top
+    enemy_rect.top = 0
+    # Choose random x position on the road
+    enemy_rect.center = (random.randint(40, SCREEN_WIDTH - 40), 0)
+
+# Function for resetting coin position and weight
+def reset_coin():
+    global coin_rect, coin_weight, coin_size
+    # Randomly choose coin weight
+    coin_weight = random.choice([1, 2, 3])
+    # Coin size depends on weight
+    coin_size = get_coin_size(coin_weight)
+    # Create new rectangle for coin
+    coin_rect = pygame.Rect(0, 0, coin_size, coin_size)
+    # Put coin above the screen in random x position
+    coin_rect.center = (random.randint(40, SCREEN_WIDTH - 40), -20)
+
+# Function for restarting the whole game
+def reset_game():
+    global enemy_speed, coin_speed, score, coins, game_over
+    # Enemy speed always stays 5, never increases
+    enemy_speed = 5
+    coin_speed = 5
+    score = 0
+    coins = 0
+    game_over = False
+    # Reset player position
+    player_rect.center = (160, 520)
+    # Reset enemy and coin positions
+    reset_enemy()
+    reset_coin()
+
+# Generate first coin
+reset_coin()
+
+# Main game loop
 while True:
-
     # Check all events
     for event in pygame.event.get():
-
-        # If the player closes the window
-        if event.type == QUIT:
+        # If player closes the window
+        if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-
-        # If game is not over, increase speed every second
-        if not game_over:
-            if event.type == INC_SPEED:
-                SPEED += 0.5
-
-        # If game is over, wait for R key to restart
+        
+        # Check for restart when game is over
         if game_over:
-            if event.type == KEYDOWN:
-                if event.key == K_r:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
                     reset_game()
-                    game_over = False
 
     # Draw background
-    DISPLAYSURF.blit(background, (0, 0))
-
-    # If game is still running
+    screen.blit(background, (0, 0))
+    
     if not game_over:
-
-        # Move and draw every object
-        for entity in all_sprites:
-            entity.move()
-            DISPLAYSURF.blit(entity.image, entity.rect)
-
-        # Check collision between player and enemies
-        if pygame.sprite.spritecollideany(P1, enemies):
-            # Play crash sound
-            pygame.mixer.Sound("pp2/Practice10/images/crash.wav").play()
-
-            # Stop the game and show Game Over screen
+        # Get pressed keys
+        keys = pygame.key.get_pressed()
+        
+        # Move player left
+        if keys[pygame.K_LEFT] and player_rect.left > 0:
+            player_rect.move_ip(-5, 0)
+        
+        # Move player right
+        if keys[pygame.K_RIGHT] and player_rect.right < SCREEN_WIDTH:
+            player_rect.move_ip(5, 0)
+        
+        # Move enemy down (speed never changes - always 5)
+        enemy_rect.move_ip(0, enemy_speed)
+        
+        # If enemy goes below screen, reset it
+        if enemy_rect.bottom > SCREEN_HEIGHT:
+            score += 1
+            reset_enemy()
+        
+        # Move coin down
+        coin_rect.move_ip(0, coin_speed)
+        
+        # If coin goes below the screen, reset it
+        if coin_rect.top > SCREEN_HEIGHT:
+            reset_coin()
+        
+        # Check collision between player and enemy
+        if player_rect.colliderect(enemy_rect):
+            crash_sound.play()
             game_over = True
-
-        # Check collision between player and coins
-        if pygame.sprite.spritecollideany(P1, coins):
-            # Increase coin counter
-            COINS += 1
-
-            # Move collected coin back above the screen
-            for coin in coins:
-                coin.rect.top = -20
-                coin.rect.center = (random.randint(40, SCREEN_WIDTH - 40), -20)
-
+        
+        # Check collision between player and coin
+        if player_rect.colliderect(coin_rect):
+            # Add coin weight to coins counter
+            coins += coin_weight
+            # Generate new coin
+            reset_coin()
+            # NO SPEED INCREASE HERE - enemy_speed stays at 5 forever
+        
+        # Draw player car
+        screen.blit(player_img, player_rect)
+        
+        # Draw enemy car
+        screen.blit(enemy_img, enemy_rect)
+        
+        # Draw coin with color and size depending on weight
+        pygame.draw.circle(
+            screen,
+            get_coin_color(coin_weight),
+            coin_rect.center,
+            coin_size // 2
+        )
+        
+        # Draw coin weight inside the coin
+        weight_text = font_small.render(str(coin_weight), True, BLACK)
+        weight_rect = weight_text.get_rect(center=coin_rect.center)
+        screen.blit(weight_text, weight_rect)
+    
     # If game is over
     else:
-        # Fill screen with red color
-        DISPLAYSURF.fill(RED)
-
-        # Draw Game Over text
-        DISPLAYSURF.blit(game_over_text, (30, 250))
-
-        # Draw restart instruction
+        screen.fill(RED)
+        screen.blit(game_over_text, (30, 250))
         restart_text = font_small.render("Press R to Restart", True, WHITE)
-        DISPLAYSURF.blit(restart_text, (100, 320))
-
-    # Create score text
-    score_text = font_small.render("Score: " + str(SCORE), True, BLACK)
-
-    # Create coin text
-    coin_text = font_small.render("Coins: " + str(COINS), True, BLACK)
-
-    # Draw score in the top-left corner
-    DISPLAYSURF.blit(score_text, (10, 10))
-
-    # Draw coins in the top-right corner
-    DISPLAYSURF.blit(coin_text, (280, 10))
-
-    # Update the display
+        screen.blit(restart_text, (100, 320))
+    
+    # Draw UI text
+    score_text = font_small.render("Score: " + str(score), True, BLACK)
+    coin_text = font_small.render("Coins: " + str(coins), True, BLACK)
+    speed_text = font_small.render("Speed: " + str(enemy_speed), True, BLACK)
+    
+    screen.blit(score_text, (10, 10))
+    screen.blit(coin_text, (260, 10))
+    screen.blit(speed_text, (10, 35))
+    
     pygame.display.update()
-
+    
     # Limit game speed to 60 FPS
-    FramePerSec.tick(FPS)
+    clock.tick(FPS)
